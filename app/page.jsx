@@ -24,18 +24,6 @@ export default async function Page() {
         >
           toolworkslab<span className="brand-mark">↗</span>
         </a>
-        <nav className="pill-nav">
-          <span className="selected">{manager ? "Manager" : "Workspace"}</span>
-          <a
-            href={
-              manager
-                ? "https://modolouge.toolworkslab.com"
-                : "https://admin.toolworkslab.com"
-            }
-          >
-            {manager ? "Workspace" : "Manager"} ↗
-          </a>
-        </nav>
         <AccountMenu initialEmail={user?.email} manager={manager} />
       </header>
       {!manager ? (
