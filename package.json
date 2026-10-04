@@ -13,20 +13,21 @@
     "test": "node --experimental-test-module-mocks --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1000.0",
+    "@aws-sdk/client-ec2": "^3.1000.0",
+    "@aws-sdk/client-s3": "^3.1000.0",
+    "@aws-sdk/client-sqs": "^3.1000.0",
+    "@aws-sdk/credential-providers": "^3.1000.0",
+    "@aws-sdk/lib-dynamodb": "^3.1000.0",
+    "@aws-sdk/s3-presigned-post": "^3.1000.0",
+    "@aws-sdk/s3-request-presigner": "^3.1000.0",
+    "@fontsource/poppins": "^5.2.7",
+    "@supabase/supabase-js": "2.117.2",
+    "@vercel/oidc": "^4.0.0",
+    "jose": "^6.1.0",
     "next": "16.3.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.180.0",
-    "jose": "^6.1.0",
-    "@vercel/oidc": "^4.0.0",
-    "@aws-sdk/client-dynamodb": "^3.1000.0",
-    "@aws-sdk/lib-dynamodb": "^3.1000.0",
-    "@aws-sdk/client-s3": "^3.1000.0",
-    "@aws-sdk/s3-presigned-post": "^3.1000.0",
-    "@aws-sdk/s3-request-presigner": "^3.1000.0",
-    "@aws-sdk/client-sqs": "^3.1000.0",
-    "@aws-sdk/client-ec2": "^3.1000.0",
-    "@aws-sdk/credential-providers": "^3.1000.0",
-    "@fontsource/poppins": "^5.2.7"
+    "three": "^0.180.0"
   }
 }

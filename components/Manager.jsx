@@ -67,6 +67,8 @@ export default function Manager() {
         "estimated_usd",
         "country",
         "city",
+        "kind",
+        "ip",
       ],
       ...data.users.map((u) => [
         u.email,
@@ -76,6 +78,8 @@ export default function Manager() {
         u.estimatedCost,
         u.location?.country || "",
         u.location?.city || "",
+        u.kind || "",
+        u.ip || "",
       ]),
     ];
     const cell = (v) =>
@@ -97,7 +101,11 @@ export default function Manager() {
   }
   const users =
       data?.users.filter((u) =>
-        u.email.toLowerCase().includes(search.toLowerCase()),
+        [u.email, u.ip, u.display_name, u.id].some((v) =>
+          String(v || "")
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+        ),
       ) || [],
     jobs = data?.users.reduce((n, u) => n + (u.jobs || 0), 0) || 0;
   return (
@@ -213,7 +221,7 @@ export default function Manager() {
           <section className="metrics">
             <article>
               <span className="eyebrow">VERIFIED ACCOUNTS</span>
-              <strong>{data.users.length}</strong>
+              <strong>{data.summary?.members || 0}</strong>
               <p>
                 {
                   data.users.filter(
@@ -241,10 +249,18 @@ export default function Manager() {
               <p>Idle and unattributed runtime</p>
             </article>
           </section>
+          <div className="activity-summary">
+            <span>{data.summary?.guests || 0} trial visitors</span>
+            <span>
+              {data.summary?.converted || 0} trials linked to accounts
+            </span>
+            <span>{data.summary?.active || 0} recently active</span>
+            <span>Updates every 15 seconds</span>
+          </div>
           <section className="data-panel">
             <div className="data-heading">
               <div className="pill-nav">
-                {["users", "activity", "audit"].map((t) => (
+                {["users", "activity", "visitors", "audit"].map((t) => (
                   <button
                     key={t}
                     className={tab === t ? "selected" : ""}
@@ -254,7 +270,9 @@ export default function Manager() {
                       ? "People & usage"
                       : t === "activity"
                         ? "Recent jobs"
-                        : "Control history"}
+                        : t === "visitors"
+                          ? "Visitor timeline"
+                          : "Control history"}
                   </button>
                 ))}
               </div>
@@ -262,7 +280,7 @@ export default function Manager() {
                 {tab === "users" && (
                   <input
                     aria-label="Find a user"
-                    placeholder="Find an email…"
+                    placeholder="Find email, guest or IP…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -291,6 +309,13 @@ export default function Manager() {
                       <tr key={u.id}>
                         <td>
                           <strong>{u.email}</strong>
+                          <span className="guest-badge">
+                            {u.kind === "guest"
+                              ? `Trial · ${u.guest_runs || 0}/5 runs${u.linked_to ? " · converted" : ""}`
+                              : u.kind === "legacy"
+                                ? "Previous account"
+                                : u.display_name || "Verified account"}
+                          </span>
                           <small>
                             Joined {new Date(u.createdAt).toLocaleDateString()}
                           </small>
@@ -299,6 +324,9 @@ export default function Manager() {
                           {[u.location?.city, u.location?.country]
                             .filter(Boolean)
                             .join(", ") || "Not recorded"}
+                          <small className="ip-address">
+                            {u.ip || "IP not retained"}
+                          </small>
                         </td>
                         <td>
                           {u.jobs || 0}
@@ -325,7 +353,8 @@ export default function Manager() {
                     {!users.length && (
                       <tr>
                         <td colSpan="7" className="empty-table">
-                          No matching users yet. Verified sign-ins appear here.
+                          No matching visitors yet. Guest trials and verified
+                          accounts appear here.
                         </td>
                       </tr>
                     )}
@@ -357,6 +386,9 @@ export default function Manager() {
                           {[e.location?.city, e.location?.country]
                             .filter(Boolean)
                             .join(", ") || "Unknown"}
+                          <small className="ip-address">
+                            {e.ip || "IP not retained"}
+                          </small>
                         </td>
                       </tr>
                     ))}
@@ -364,6 +396,47 @@ export default function Manager() {
                       <tr>
                         <td colSpan="6" className="empty-table">
                           No jobs recorded yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : tab === "visitors" ? (
+                <table className="activity-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Visitor</th>
+                      <th>Activity</th>
+                      <th>IP address</th>
+                      <th>Location</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.activity.map((e) => (
+                      <tr key={e.id}>
+                        <td>{when(e.created_at)}</td>
+                        <td>{e.email}</td>
+                        <td>{e.event.replaceAll("_", " ")}</td>
+                        <td className="ip-address">{e.ip || "Not retained"}</td>
+                        <td>
+                          {[e.location?.city, e.location?.country]
+                            .filter(Boolean)
+                            .join(", ") || "Unknown"}
+                        </td>
+                        <td>
+                          {e.detail?.filename ||
+                            e.detail?.type ||
+                            e.detail?.jobId ||
+                            "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    {!data.activity.length && (
+                      <tr>
+                        <td colSpan={6} className="empty-table">
+                          Visitor activity will appear here as people explore.
                         </td>
                       </tr>
                     )}
@@ -424,12 +497,15 @@ export default function Manager() {
                 on wall-clock processing time, including preparation and
                 meshing. Shared runtime is the remainder of recorded uptime.
                 These are estimates, not invoice totals; storage, requests,
-                transfer, tax, Cognito and Vercel charges are excluded.
+                transfer, tax, Supabase and Vercel charges are excluded.
               </p>
               <p>
                 Connection locations are approximate, based on Vercel’s IP
                 geolocation. A VPN can change them. Latest 100 job events shown;
-                the export includes this month’s user aggregates.
+                the export includes this month’s usage for the latest 1,000
+                visitors. IP addresses are retained for 30 days; activity for 90
+                days. Guests are identified by a browser session, not a verified
+                identity.
               </p>
             </div>
           </section>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import AuthJourney from "./AuthJourney.jsx";
 const Viewport = dynamic(() => import("./Viewport.jsx"), { ssr: false });
 export async function api(path, body) {
   const r = await fetch(
@@ -14,7 +15,11 @@ export async function api(path, body) {
         },
   );
   const j = await r.json();
-  if (!r.ok) throw new Error(j.error || "Request failed.");
+  if (!r.ok)
+    throw Object.assign(new Error(j.error || "Request failed."), {
+      code: j.code,
+      status: r.status,
+    });
   return j;
 }
 export default function Workspace() {
@@ -27,12 +32,17 @@ export default function Workspace() {
     [warnings, setWarnings] = useState([]),
     [duration, setDuration] = useState(null),
     [usage, setUsage] = useState(null),
-    [drag, setDrag] = useState(false);
+    [drag, setDrag] = useState(false),
+    [showAuth, setShowAuth] = useState(false),
+    [needsOnboarding, setNeedsOnboarding] = useState(false);
   const input = useRef(),
+    trialInit = useRef(null),
     lock = useRef(false),
     alive = useRef(true);
   useEffect(() => {
     alive.current = true;
+    const openSignIn = () => setShowAuth(true);
+    window.addEventListener("modolouge-signin", openSignIn);
     const refresh = () => {
       api("status")
         .then(setStatus)
@@ -41,11 +51,23 @@ export default function Workspace() {
         .then(setUsage)
         .catch(() => {});
     };
+    trialInit.current ||= api("trial/start", {});
+    trialInit.current
+      .then(async () => {
+        const me = await api("me");
+        setUsage(me);
+        if (me.kind === "member" && !me.onboarded) {
+          setNeedsOnboarding(true);
+          setShowAuth(true);
+        }
+      })
+      .catch((e) => setError(e.message));
     refresh();
     const i = setInterval(refresh, 20000);
     return () => {
       alive.current = false;
       clearInterval(i);
+      window.removeEventListener("modolouge-signin", openSignIn);
     };
   }, []);
   async function job(body) {
@@ -85,6 +107,10 @@ export default function Workspace() {
   }
   async function run() {
     if (lock.current || !definition) return;
+    if (usage?.kind === "guest" && usage.remaining <= 0) {
+      setShowAuth(true);
+      return;
+    }
     lock.current = true;
     setBusy("Sending values…");
     setError("");
@@ -92,6 +118,7 @@ export default function Workspace() {
       await solve();
     } catch (e) {
       setError(e.message);
+      if (e.code === "TRIAL_EXHAUSTED") setShowAuth(true);
     } finally {
       lock.current = false;
       setBusy("");
@@ -102,6 +129,10 @@ export default function Workspace() {
   }
   async function load(file, example = false) {
     if (lock.current) return;
+    if (usage?.kind === "guest" && usage.remaining <= 0) {
+      setShowAuth(true);
+      return;
+    }
     if (
       !example &&
       (!/\.(gh|ghx)$/i.test(file?.name) || file.size > 20 * 1024 * 1024)
@@ -137,6 +168,7 @@ export default function Workspace() {
       await solve(d, v);
     } catch (e) {
       setError(e.message);
+      if (e.code === "TRIAL_EXHAUSTED") setShowAuth(true);
     } finally {
       lock.current = false;
       setBusy("");
@@ -151,8 +183,16 @@ export default function Workspace() {
         <div>
           <div className="eyebrow">MOD O LO GUE / WORKSPACE</div>
           <h1>
-            Form follows your input<span className="pink">.</span>
+            {definition
+              ? "Form follows your input"
+              : "Drop it. Shape it. Make it yours"}
+            <span className="pink">.</span>
           </h1>
+          <p className="workspace-intro">
+            {usage?.kind === "member"
+              ? `Welcome${usage.name ? ", " + usage.name : ""}. Your next idea starts here.`
+              : "Your Grasshopper definition, alive in the browser. Try five geometry runs — no account needed."}
+          </p>
         </div>
         <span className={"status " + (status?.online ? "online" : "")}>
           <i />
@@ -163,6 +203,46 @@ export default function Workspace() {
               : "Compute offline"}
         </span>
       </div>
+      <div className="trial-strip">
+        <div>
+          <span className="eyebrow">
+            {usage?.kind === "member"
+              ? "YOUR DAILY ALLOWANCE"
+              : "A LITTLE ROOM TO EXPLORE"}
+          </span>
+          <strong>
+            {usage?.kind === "member"
+              ? `${usage.remaining} jobs left today`
+              : `${usage?.remaining ?? 5} of 5 free geometry runs left`}
+          </strong>
+        </div>
+        {usage?.kind !== "member" && (
+          <>
+            <div className="trial-dots" aria-hidden="true">
+              {Array.from({ length: 5 }, (_, i) => (
+                <i
+                  key={i}
+                  className={i < (usage?.remaining ?? 5) ? "available" : ""}
+                />
+              ))}
+            </div>
+            <button className="text-link" onClick={() => setShowAuth(true)}>
+              Make a free account ↗
+            </button>
+          </>
+        )}
+      </div>
+      <div className="workspace-steps">
+        <span className={!definition ? "active" : ""}>
+          01 <b>Drop a definition</b>
+        </span>
+        <span className={definition ? "active" : ""}>
+          02 <b>Adjust the sliders</b>
+        </span>
+        <span className={objects.length ? "active" : ""}>
+          03 <b>Explore your geometry</b>
+        </span>
+      </div>
       <div className="studio">
         <aside className="control-panel">
           <div className="panel-heading">
@@ -171,7 +251,7 @@ export default function Workspace() {
           </div>
           <button
             className={"dropzone " + (drag ? "dragging" : "")}
-            disabled={!!busy || !status?.online}
+            disabled={!!busy || !status?.online || !usage}
             onClick={() => input.current.click()}
             onDragOver={(e) => {
               e.preventDefault();
@@ -181,7 +261,7 @@ export default function Workspace() {
             onDrop={(e) => {
               e.preventDefault();
               setDrag(false);
-              if (status?.online && e.dataTransfer.files[0])
+              if (usage && status?.online && e.dataTransfer.files[0])
                 load(e.dataTransfer.files[0]);
             }}
           >
@@ -201,7 +281,7 @@ export default function Workspace() {
           />
           <button
             className="example"
-            disabled={!!busy || !status?.online}
+            disabled={!!busy || !status?.online || !usage}
             onClick={() => load(null, true)}
           >
             Start with a parametric sphere <span>↗</span>
@@ -307,14 +387,18 @@ export default function Workspace() {
             disabled={!definition || !!busy || !status?.online}
             onClick={run}
           >
-            {busy || "Update geometry"}
+            {busy ||
+              (usage?.kind === "guest" && usage.remaining <= 0
+                ? "Sign in to keep exploring"
+                : "Update geometry")}
             <span>↗</span>
           </button>
           <p className="fine">
-            {usage
-              ? `${usage.dailyJobs} / ${usage.limit} jobs today`
-              : "Loading allowance…"}{" "}
-            · UTC reset
+            {usage?.kind === "guest"
+              ? "One geometry update uses one free run."
+              : usage
+                ? `${usage.dailyJobs} / ${usage.limit} jobs today · UTC reset`
+                : "Preparing your workspace…"}
           </p>
         </aside>
         <section className="view-panel">
@@ -353,6 +437,37 @@ export default function Workspace() {
         plugins are rejected. Files expire after 24 hours.{" "}
         <a href="/privacy">Service details ↗</a>
       </p>
+      <p className="fine">
+        To keep the trial fair, we record your IP address and activity,
+        including before sign-in. IP details are visible only to the
+        administrator and removed after 30 days. Trial limits apply to your
+        browser and network.
+      </p>
+      {showAuth && (
+        <div
+          className="auth-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create your Modolouge account"
+        >
+          <AuthJourney
+            onboarding={needsOnboarding}
+            onClose={() => setShowAuth(false)}
+            onComplete={async () => {
+              const me = await api("me");
+              setUsage(me);
+              setNeedsOnboarding(false);
+              setShowAuth(false);
+              setError("");
+              window.dispatchEvent(
+                new CustomEvent("modolouge-auth", {
+                  detail: { email: me.email },
+                }),
+              );
+            }}
+          />
+        </div>
+      )}
     </main>
   );
 }

@@ -1,5 +1,6 @@
-import { session, requireUser } from "../lib/auth.js";
+import { session } from "../lib/auth.js";
 import { manager } from "../lib/config.js";
+import AccountMenu from "../components/AccountMenu.jsx";
 import Workspace from "../components/Workspace.jsx";
 import Manager from "../components/Manager.jsx";
 export const dynamic = "force-dynamic";
@@ -7,7 +8,8 @@ export default async function Page() {
   let user = null,
     message = "";
   try {
-    if (await session()) user = await requireUser(manager);
+    const signed = await session();
+    if (signed?.sub) user = { email: signed.email };
   } catch (e) {
     message = e.status ? e.message : "Sign-in is temporarily unavailable.";
   }
@@ -34,27 +36,12 @@ export default async function Page() {
             {manager ? "Workspace" : "Manager"} ↗
           </a>
         </nav>
-        <div className="account">
-          {user ? (
-            <>
-              <span>{user.email}</span>
-              <form action="/api/auth/logout" method="post">
-                <button className="quiet">Sign out</button>
-              </form>
-            </>
-          ) : (
-            <a className="button quiet" href="/api/auth/login">
-              Sign in ↗
-            </a>
-          )}
-        </div>
+        <AccountMenu initialEmail={user?.email} manager={manager} />
       </header>
-      {user ? (
-        manager ? (
-          <Manager />
-        ) : (
-          <Workspace email={user.email} />
-        )
+      {!manager ? (
+        <Workspace />
+      ) : user ? (
+        <Manager />
       ) : (
         <main className="landing">
           <div className="eyebrow">

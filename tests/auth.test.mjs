@@ -4,7 +4,7 @@ import { EncryptJWT } from "jose";
 import { createHash } from "node:crypto";
 process.env.SESSION_SECRET = "test-only-secret-not-for-deployment";
 process.env.APP_URL = "https://modolouge.example";
-let cookieValue, record;
+let cookieValue, record, authUser;
 mock.module("next/headers.js", {
   namedExports: {
     cookies: async () => ({
@@ -12,52 +12,78 @@ mock.module("next/headers.js", {
     }),
   },
 });
-mock.module("../lib/aws.js", {
-  namedExports: { get: async () => record, update: async () => {} },
+mock.module("../lib/aws.js", { namedExports: { update: async () => {} } });
+mock.module("../lib/activity.js", {
+  namedExports: {
+    person: async () => record,
+    activity: async () => {},
+    connection: () => ({}),
+    rateLimit: async () => true,
+  },
+});
+mock.module("../lib/supabase.js", {
+  namedExports: {
+    authClient: () => ({
+      auth: { getUser: async () => ({ data: { user: authUser } }) },
+    }),
+    backend: () => ({}),
+    checked: async () => {},
+  },
 });
 const { requireUser, originCheck } = await import("../lib/auth.js");
 async function cookie(sub, expiry = "1h") {
-  cookieValue = await new EncryptJWT({ sub })
+  cookieValue = await new EncryptJWT({
+    sub,
+    access: "test-access",
+    expires: Math.floor(Date.now() / 1000) + 3600,
+  })
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
     .setExpirationTime(expiry)
     .encrypt(createHash("sha256").update(process.env.SESSION_SECRET).digest());
+  authUser = {
+    id: sub,
+    email: "verified@example.invalid",
+    email_confirmed_at: new Date().toISOString(),
+    is_anonymous: false,
+  };
 }
-test("anonymous and tampered sessions cannot run jobs", async () => {
+test("missing, forged and expired sessions are rejected", async () => {
   cookieValue = null;
   await assert.rejects(requireUser(), { status: 401 });
-  cookieValue = "forged-session";
+  cookieValue = "forged";
+  await assert.rejects(requireUser(), { status: 401 });
+  await cookie("test", Math.floor(Date.now() / 1000) - 60);
   await assert.rejects(requireUser(), { status: 401 });
 });
-test("expired encrypted sessions are rejected", async () => {
-  await cookie("test-user", Math.floor(Date.now() / 1000) - 60);
+test("unverified and anonymous Supabase users cannot become members", async () => {
+  await cookie("test");
+  record = { id: "test", blocked: false };
+  authUser.email_confirmed_at = null;
+  await assert.rejects(requireUser(), { status: 401 });
+  authUser.email_confirmed_at = new Date().toISOString();
+  authUser.is_anonymous = true;
   await assert.rejects(requireUser(), { status: 401 });
 });
-test("account blocking applies to an existing valid session", async () => {
-  await cookie("test-user");
-  record = {
-    sk: "test-user",
-    email: "verified@example.invalid",
-    blocked: true,
-  };
+test("blocking is checked against current database state", async () => {
+  await cookie("test");
+  record = { id: "test", blocked: true };
   await assert.rejects(requireUser(), { status: 403 });
 });
-test("a regular verified account cannot access manager functions", async () => {
-  await cookie("test-user");
-  record = {
-    sk: "test-user",
-    email: "verified@example.invalid",
-    blocked: false,
-  };
+test("profile email and editable user metadata cannot grant administration", async () => {
+  await cookie("test");
+  record = { id: "test", email: "info@toolworkslab.com", blocked: false };
+  authUser.user_metadata = { role: "admin", email: "info@toolworkslab.com" };
   await assert.rejects(requireUser(true), { status: 403 });
-  assert.equal((await requireUser()).sk, "test-user");
+  assert.equal((await requireUser()).email, "verified@example.invalid");
 });
-test("only the designated administrator can access manager functions", async () => {
+test("only a currently verified administrator email grants administration", async () => {
   await cookie("admin");
-  record = { sk: "admin", email: "info@toolworkslab.com", blocked: false };
+  authUser.email = "info@toolworkslab.com";
+  record = { id: "admin", blocked: false };
   assert.equal((await requireUser(true)).email, "info@toolworkslab.com");
 });
-test("mutations reject foreign and absent Origin headers", () => {
+test("mutations reject absent, foreign and lookalike origins", () => {
   for (const origin of [
     null,
     "https://evil.invalid",

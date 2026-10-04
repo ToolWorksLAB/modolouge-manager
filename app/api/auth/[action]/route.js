@@ -1,4 +1,10 @@
-import { login, callback, logout, safeError } from "../../../../lib/auth.js";
+import {
+  login,
+  callback,
+  logout,
+  authAction,
+  safeError,
+} from "../../../../lib/auth.js";
 export const runtime = "nodejs";
 export async function GET(req, { params }) {
   try {
@@ -13,7 +19,9 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   try {
     if ((await params).action === "logout") return await logout(req);
-    return new Response("Not found", { status: 404 });
+    return Response.json(await authAction((await params).action, req), {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (e) {
     return safeError(e);
   }

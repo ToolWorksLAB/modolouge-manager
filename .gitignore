@@ -8,3 +8,5 @@ node_modules/
 worker/tools/GhBridge/bin/
 worker/tools/GhBridge/obj/
 worker/tools/GhBridge/publish/
+
+supabase/.temp/

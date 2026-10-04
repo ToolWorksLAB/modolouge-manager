@@ -6,12 +6,16 @@ export default function Privacy() {
       <h1>Built with care.</h1>
       <h2>Accounts and usage</h2>
       <p>
-        ToolWorksLab uses your verified email address to provide access, enforce
-        quotas, and identify usage to the administrator. We record job
-        timestamps, duration, outcome, and approximate country, region and city
-        provided by Vercel. These locations can be inaccurate, especially with a
-        VPN. We do not request GPS location or store full IP addresses in our
-        application database.
+        ToolWorksLab uses Supabase in Stockholm for accounts, onboarding and
+        service activity. You can try the workspace before creating an account.
+        We record a secure guest session identifier, your connection IP address,
+        job timestamps, duration, outcome, and approximate country, region and
+        city provided by Vercel. These locations can be inaccurate, especially
+        with a VPN. We do not request GPS location. Full IP addresses are
+        visible only to the administrator for service monitoring and abuse
+        prevention, and are automatically removed after 30 days. We also retain
+        a keyed hash of the IP for the trial allowance during that period. An IP
+        can identify a shared network or VPN, rather than an individual person.
       </p>
       <h2>Your definitions</h2>
       <p>
@@ -32,9 +36,13 @@ export default function Privacy() {
       </p>
       <h2>Usage limits</h2>
       <p>
-        Each verified account has 60 jobs per UTC day, with one outstanding job
-        at a time. Preparing a definition and running the example also count.
-        The whole service has a shared limit of 600 jobs per day. Jobs time out
+        Guests can make five geometry runs before verifying their email.
+        Preparing a definition does not use a geometry run, but is limited to
+        five preparations and five file uploads. Trial limits apply to your
+        browser and network for 30 days, including after clearing cookies. Each
+        verified account has 60 jobs per UTC day, with one outstanding job at a
+        time. Preparing a definition and running the example also count. The
+        whole service has a shared limit of 600 jobs per day. Jobs time out
         after three minutes. The administrator may block abusive accounts or
         stop the service.
       </p>
