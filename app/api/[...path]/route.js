@@ -43,6 +43,7 @@ export async function GET(req, { params }) {
         {
           kind: u.kind,
           name: u.display_name,
+          intent: u.intent,
           onboarded: !!u.onboarded_at,
           email: u.email,
           dailyJobs: q?.jobs || 0,

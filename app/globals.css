@@ -930,147 +930,6 @@ td .quiet {
     transition: none !important;
   }
 }
-.auth-page {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 40px 24px 70px;
-}
-.auth-page > .brand {
-  display: inline-block;
-  margin-bottom: 30px;
-}
-.auth-journey {
-  background: #12171b;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  padding: 38px;
-  max-width: 680px;
-  width: 100%;
-  margin: 0 auto 24px;
-}
-.auth-journey h1 {
-  font-size: clamp(28px, 3vw, 44px);
-  letter-spacing: -1.8px;
-  margin: 30px 0 14px;
-}
-.auth-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-.journey-progress {
-  display: flex;
-  gap: 16px;
-  margin-top: 28px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-}
-.journey-progress span {
-  flex: 1;
-  color: #777f86;
-  font-size: 10px;
-  display: grid;
-  gap: 6px;
-}
-.journey-progress b {
-  font-family: var(--mono);
-  font-weight: 400;
-}
-.journey-progress .active {
-  color: var(--paper);
-}
-.journey-progress .active b {
-  color: var(--pink);
-}
-.form-field {
-  display: grid;
-  gap: 12px;
-  margin: 24px 0;
-  font-size: 12px;
-}
-.form-field input {
-  width: 100%;
-  background: #090d10;
-  border: 1px solid #424a50;
-  color: var(--paper);
-  border-radius: 12px;
-  padding: 16px;
-}
-.form-field input:focus {
-  border-color: var(--pink);
-  outline: 1px solid var(--pink);
-}
-.form-field .code-input {
-  font-family: var(--mono);
-  font-size: 28px;
-  letter-spacing: 8px;
-}
-.auth-secondary {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-.auth-submit {
-  width: 100%;
-  margin: 24px 0 16px;
-}
-.choice-field {
-  border: 0;
-  padding: 0;
-  margin: 20px 0;
-}
-.choice-field legend {
-  font-size: 12px;
-  margin-bottom: 16px;
-}
-.choice-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.choice {
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  text-align: left;
-  background: #0c1115;
-  font-size: 12px;
-}
-.choice.selected {
-  border-color: var(--pink);
-  background: #291021;
-}
-.intent-choices {
-  display: grid;
-  gap: 12px;
-}
-.intent-choices .choice {
-  display: grid;
-  gap: 8px;
-  padding: 20px;
-}
-.choice span {
-  color: #a6afb6;
-  line-height: 1.7;
-}
-.welcome-ready {
-  text-align: center;
-  padding: 10px 0 30px;
-}
-.ready-mark {
-  font-size: 56px;
-  color: var(--pink);
-}
-.auth-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(10px);
-  padding: 5vh 20px;
-  overflow-y: auto;
-}
 .workspace-intro {
   color: #a6afb6;
   max-width: 670px;
@@ -1154,13 +1013,6 @@ td .quiet {
   font-size: clamp(28px, 3.4vw, 48px);
 }
 @media (max-width: 650px) {
-  .auth-journey {
-    padding: 24px 20px;
-    border-radius: 16px;
-  }
-  .auth-overlay {
-    padding: 16px 10px;
-  }
   .trial-strip {
     flex-wrap: wrap;
     padding: 18px;
@@ -1182,15 +1034,6 @@ td .quiet {
   }
   .workspace-steps b {
     margin-left: 0;
-  }
-  .choice-grid {
-    grid-template-columns: 1fr;
-  }
-  .journey-progress {
-    gap: 8px;
-  }
-  .auth-top .eyebrow {
-    font-size: 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

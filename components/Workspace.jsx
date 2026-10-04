@@ -3,25 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import AuthJourney from "./AuthJourney.jsx";
 const Viewport = dynamic(() => import("./Viewport.jsx"), { ssr: false });
-export async function api(path, body) {
-  const r = await fetch(
-    "/api/" + path,
-    body === undefined
-      ? { cache: "no-store" }
-      : {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        },
-  );
-  const j = await r.json();
-  if (!r.ok)
-    throw Object.assign(new Error(j.error || "Request failed."), {
-      code: j.code,
-      status: r.status,
-    });
-  return j;
-}
+import { api } from "../lib/client-api.js";
+export { api } from "../lib/client-api.js";
 export default function Workspace() {
   const [status, setStatus] = useState(null),
     [definition, setDefinition] = useState(null),
@@ -243,6 +226,34 @@ export default function Workspace() {
           03 <b>Explore your geometry</b>
         </span>
       </div>
+      {usage?.kind === "member" && usage.intent && !definition && (
+        <div className="workspace-welcome">
+          <div>
+            <span className="eyebrow">YOUR FIRST EXPERIMENT</span>
+            <p>
+              {usage.intent === "Play with the example"
+                ? "Start with a sphere. Change a value and see it take shape."
+                : usage.intent === "Find my bearings"
+                  ? "Drop a file, adjust its sliders, then update the geometry. Or start with our example."
+                  : "Your definition is the starting point. Drop a .gh or .ghx file below."}
+            </p>
+          </div>
+          <button
+            className="text-link"
+            disabled={!!busy || !status?.online}
+            onClick={() =>
+              usage.intent === "Bring my own definition"
+                ? input.current.click()
+                : load(null, true)
+            }
+          >
+            {usage.intent === "Bring my own definition"
+              ? "Choose a definition"
+              : "Try the example"}{" "}
+            ↗
+          </button>
+        </div>
+      )}
       <div className="studio">
         <aside className="control-panel">
           <div className="panel-heading">
@@ -452,7 +463,22 @@ export default function Workspace() {
         >
           <AuthJourney
             onboarding={needsOnboarding}
-            onClose={() => setShowAuth(false)}
+            hasExploration={!!definition}
+            onClose={() => {
+              setShowAuth(false);
+              api("me")
+                .then((me) => {
+                  setUsage(me);
+                  setNeedsOnboarding(me.kind === "member" && !me.onboarded);
+                  if (me.kind === "member")
+                    window.dispatchEvent(
+                      new CustomEvent("modolouge-auth", {
+                        detail: { email: me.email },
+                      }),
+                    );
+                })
+                .catch(() => {});
+            }}
             onComplete={async () => {
               const me = await api("me");
               setUsage(me);
