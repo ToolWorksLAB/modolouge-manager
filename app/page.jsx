@@ -27,8 +27,8 @@ export default async function Page() {
           <a
             href={
               manager
-                ? "https://modolouge.vercel.app"
-                : "https://modolouge-manager.vercel.app"
+                ? "https://modolouge.toolworkslab.com"
+                : "https://admin.toolworkslab.com"
             }
           >
             {manager ? "Workspace" : "Manager"} ↗

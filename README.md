@@ -12,7 +12,7 @@ Start/stop targets only Linux EC2 `i-0c6e3386ff6d66b5b` in `eu-north-1`. The pub
 
 GitHub: `ToolWorksLAB/modolouge-manager`, production branch `main`. Intended company Vercel team: `team_D2suiiZSHHspd8E4WqQuvMeY` / `info-85726815s-projects`. Never use the Plantar3D client workspace.
 
-The owner authorized making this repository public. It is connected to the company Vercel Hobby workspace; pushes to `main` deploy production at [modolouge-manager.vercel.app](https://modolouge-manager.vercel.app). The public workspace is [modolouge.vercel.app](https://modolouge.vercel.app). The Vercel subscription is unchanged.
+The owner authorized making this repository public. It is connected to the company Vercel Hobby workspace; pushes to `main` deploy production at [admin.toolworkslab.com](https://admin.toolworkslab.com). The public workspace is [modolouge.toolworkslab.com](https://modolouge.toolworkslab.com). The previous Vercel addresses redirect to these canonical domains. The Vercel subscription is unchanged.
 
 Runtime environment: `APP_URL`, `SESSION_SECRET` (unique random 32+ bytes), `COGNITO_POOL_ID`, `COGNITO_CLIENT_ID`, `COGNITO_DOMAIN`, `AWS_REGION`, `AWS_ROLE_ARN`, `DATA_TABLE`. Use Cognito client `4kil76ajv9o6gjcrkcg9807kli` in pool `eu-north-1_c2tNv7bsF`, and AWS role `arn:aws:iam::444115534902:role/ModolougeVercelManager`.
 

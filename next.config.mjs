@@ -1,5 +1,19 @@
 export default {
   poweredByHeader: false,
+  async redirects() {
+    const domains = {
+      "modolouge.vercel.app": "https://modolouge.toolworkslab.com",
+      "modolouge-manager.vercel.app": "https://admin.toolworkslab.com",
+    };
+    return Object.entries(domains)
+      .filter(([, destination]) => destination === process.env.APP_URL)
+      .map(([host, destination]) => ({
+        source: "/:path*",
+        has: [{ type: "host", value: host }],
+        destination: destination + "/:path*",
+        permanent: true,
+      }));
+  },
   async headers() {
     return [
       {
