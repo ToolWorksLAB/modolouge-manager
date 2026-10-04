@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.vercel/
+.env*
+!.env.example
+*.log
+.runtime/
+worker/tools/GhBridge/bin/
+worker/tools/GhBridge/obj/
+worker/tools/GhBridge/publish/
