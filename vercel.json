@@ -1,1 +1,5 @@
-{"regions":["arn1"],"framework":"nextjs","git":{"deploymentEnabled":{"main":true}}}
+{
+  "regions": ["arn1"],
+  "framework": "nextjs",
+  "git": { "deploymentEnabled": { "main": true } }
+}
