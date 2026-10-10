@@ -42,7 +42,10 @@ export default function AIUsage() {
         <div>
           <span className="eyebrow">APP BUILDER / AI USAGE</span>
           <h2>The cost of an idea.</h2>
-          <p>GPT-5.4 mini · node and connection analysis · this UTC month</p>
+          <p>
+            GPT-6.1 Sol · graph editing, Compute tests and app design · this UTC
+            month
+          </p>
         </div>
         <button className="quiet" onClick={refresh}>
           Refresh AI usage
@@ -125,7 +128,7 @@ export default function AIUsage() {
             </button>
           </div>
           <p className="fine">
-            The cap uses reported costs, estimates and a $0.30 reservation per
+            The cap uses reported costs, estimates and a $3 reservation per
             in-flight request. Pausing blocks new generations; a request already
             running may finish. Reasoning tokens are included in output tokens,
             not added again. This panel excludes geometry and hosting costs.
@@ -202,6 +205,28 @@ export default function AIUsage() {
                       <td>
                         {e.status}
                         {e.error_code ? <small> / {e.error_code}</small> : null}
+                        {e.events?.length > 0 && (
+                          <details>
+                            <summary>Agent checks ({e.events.length})</summary>
+                            <ol>
+                              {e.events.map((event, index) => (
+                                <li key={index}>
+                                  <strong>
+                                    {event.tool} · {event.status}
+                                  </strong>
+                                  <br />
+                                  {event.message}
+                                  {event.jobId && (
+                                    <small>Compute job: {event.jobId}</small>
+                                  )}
+                                  {event.edits > 0 && (
+                                    <small>{event.edits} graph edits</small>
+                                  )}
+                                </li>
+                              ))}
+                            </ol>
+                          </details>
+                        )}
                       </td>
                       <td>
                         {number(e.input_tokens)} / {number(e.output_tokens)}
