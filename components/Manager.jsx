@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { api } from "./Workspace.jsx";
+import AIUsage from "./AIUsage.jsx";
 const money = (n) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -257,6 +258,7 @@ export default function Manager() {
             <span>{data.summary?.active || 0} recently active</span>
             <span>Updates every 15 seconds</span>
           </div>
+          <AIUsage />
           <section className="data-panel">
             <div className="data-heading">
               <div className="pill-nav">

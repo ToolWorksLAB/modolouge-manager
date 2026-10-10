@@ -1,0 +1,7 @@
+.env*
+.git/
+.runtime/
+node_modules/
+.next/
+*.log
+tests/

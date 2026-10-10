@@ -1045,3 +1045,76 @@ td .quiet {
     transition-duration: 0.01ms !important;
   }
 }
+.ai-usage-panel {
+  border: 1px solid var(--line);
+  padding: 30px;
+  margin: 28px 0;
+  border-radius: 12px;
+}
+.ai-usage-heading,
+.ai-budget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.ai-usage-heading p {
+  font-size: 11px;
+  color: #aab5ad;
+}
+.ai-usage-heading h2 {
+  font-size: 27px;
+}
+.ai-token-number {
+  font-size: 25px !important;
+  overflow-wrap: anywhere;
+}
+.ai-budget {
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.ai-budget label {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-budget input {
+  width: 90px;
+  padding: 10px;
+  background: #17201b;
+  color: #fff;
+  border: 1px solid #697369;
+  border-radius: 5px;
+}
+.ai-usage-details {
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+.ai-usage-details summary {
+  cursor: pointer;
+  font: 14px var(--mono);
+}
+.ai-usage-details table {
+  margin-top: 20px;
+}
+.ai-usage-details td small {
+  display: block;
+  color: #9faaa5;
+}
+.ai-usage-panel > .fine {
+  line-height: 1.8;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+@media (max-width: 640px) {
+  .ai-usage-panel {
+    padding: 16px;
+  }
+  .ai-budget .button {
+    width: 100%;
+  }
+}
