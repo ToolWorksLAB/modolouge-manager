@@ -235,7 +235,7 @@ export default function AIUsage() {
                         {e.cost_usd === null
                           ? `${usd(e.estimate_usd)} estimated`
                           : usd(e.cost_usd)}
-                        {e.cost_usd === null && Number(e.reserved_usd) > 0 ? (
+                        {Number(e.reserved_usd) > 0 ? (
                           <small> / reserved {usd(e.reserved_usd)}</small>
                         ) : null}
                       </td>
