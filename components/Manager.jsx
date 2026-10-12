@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { api } from "./Workspace.jsx";
 import AIUsage from "./AIUsage.jsx";
+import DemoVisitors from "./DemoVisitors.jsx";
 const money = (n) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -129,6 +130,7 @@ export default function Manager() {
           {error}
         </div>
       )}
+      <DemoVisitors />
       {!data ? (
         <div className="loading-card">Reading service activity…</div>
       ) : (

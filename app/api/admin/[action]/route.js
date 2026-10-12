@@ -7,12 +7,15 @@ import {
 } from "../../../../lib/auth.js";
 import { dashboard, control, block } from "../../../../lib/admin.js";
 import { aiDashboard, aiSettings } from "../../../../lib/ai-admin.js";
+import { demoDashboard } from "../../../../lib/demo-visitors.js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(req, { params }) {
   try {
     if (!manager) throw failure("Not found.", 404);
     await requireUser(true);
+    if ((await params).action === "demo-visitors")
+      return Response.json(await demoDashboard(req), { headers: { "Cache-Control": "no-store" } });
     if ((await params).action === "ai")
       return Response.json(await aiDashboard(), {
         headers: { "Cache-Control": "no-store" },
