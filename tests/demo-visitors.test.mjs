@@ -23,11 +23,7 @@ test("signed visit tokens reject tampering and expiry", () => {
   assert.throws(()=>mod.verifyToken(token,21601001), {status:401});
   assert.throws(()=>mod.verifyToken("garbage",1001), {status:401});
 });
-test("network and referrer storage exclude identifying suffixes and query strings", () => {
-  assert.equal(mod.maskedIp("192.0.2.42"),"192.0.2.0/24");
-  assert.equal(mod.maskedIp("2001:db8:abcd:1234::42"),"2001:db8:abcd::/48");
-  assert.equal(mod.maskedIp("::1"),"0:0:0::/48");
-  assert.equal(mod.maskedIp("invalid"),null);
+test("referrer storage excludes paths and query strings", () => {
   assert.equal(mod.referrerDomain("https://example.com/private?email=person@example.com"),"example.com");
   assert.equal(mod.referrerDomain("file:///secret"),null);
 });
@@ -37,31 +33,31 @@ test("device classification covers mobile, tablet, desktop and browser families"
   assert.equal(mod.deviceInfo("Mozilla/5.0 (iPad) Mobile Safari/604.1").device,"Tablet");
   assert.equal(mod.deviceInfo("Mozilla/5.0 (Macintosh) Safari/604.1",true).os,"iOS / iPadOS");
 });
-test("endpoint requires exact origin, explicit consent and bounded input before writing", async () => {
+test("endpoint requires exact origin, explicit analytics mode and bounded input before writing", async () => {
   writes=[];
-  for (const origin of ["https://demo.toolworkslab.com.evil.invalid","null","https://admin.toolworkslab.com"]) assert.equal((await route.POST(request({type:"start",consent:true,section:"intro"},origin))).status,403);
+  for (const origin of ["https://demo.toolworkslab.com.evil.invalid","null","https://admin.toolworkslab.com"]) assert.equal((await route.POST(request({type:"start",mode:"anonymous",section:"intro"},origin))).status,403);
   assert.equal((await route.POST(request({type:"start",section:"intro"}))).status,400);
-  assert.equal((await route.POST(request({type:"start",consent:true,section:"intro",large:"x".repeat(5000)}))).status,413);
+  assert.equal((await route.POST(request({type:"start",mode:"anonymous",section:"intro",large:"x".repeat(5000)}))).status,413);
   assert.equal(writes.length,0);
 });
 test("start stores only coarse metadata; pulse needs signed session and sanitized counters", async () => {
   writes=[];
-  const started=await route.POST(request({type:"start",consent:true,section:"intro",referrer:"https://example.org/path?private=yes",email:"should-not-be-stored"}));
+  const started=await route.POST(request({type:"start",mode:"anonymous",section:"intro",referrer:"https://example.org/path?private=yes",email:"should-not-be-stored"}));
   assert.equal(started.status,200);
   assert.equal(started.headers.get("access-control-allow-origin"),mod.demoOrigin);
   const {token}=await started.json();
-  assert.equal(writes[0].value.masked_ip,"192.0.2.0/24");
+  assert.equal(writes[0].value.masked_ip,null);
   assert.equal(writes[0].value.referrer,"example.org");
   assert.equal(writes[0].value.email,undefined);
   assert.equal(writes[0].value.ip,undefined);
-  assert.equal((await route.POST(request({type:"pulse",consent:true,section:"wedges",token,seq:1,activeSeconds:10,events:{wedges:1,private:"not saved"}}))).status,200);
+  assert.equal((await route.POST(request({type:"pulse",mode:"anonymous",section:"wedges",token,seq:1,activeSeconds:10,events:{wedges:1,private:"not saved"}}))).status,200);
   assert.equal(writes[1].value.p_events.private,undefined);
-  assert.equal((await route.POST(request({type:"pulse",consent:true,section:"wedges",token:"forged",seq:2,activeSeconds:10}))).status,401);
-  assert.equal((await route.POST(request({type:"pulse",consent:true,section:"wedges",token,seq:3,activeSeconds:-10}))).status,400);
+  assert.equal((await route.POST(request({type:"pulse",mode:"anonymous",section:"wedges",token:"forged",seq:2,activeSeconds:10}))).status,401);
+  assert.equal((await route.POST(request({type:"pulse",mode:"anonymous",section:"wedges",token,seq:3,activeSeconds:-10}))).status,400);
 });
 test("rate-limited requests do not create sessions", async () => {
   limited=true; writes=[];
-  assert.equal((await route.POST(request({type:"start",consent:true,section:"intro"}))).status,429);
+  assert.equal((await route.POST(request({type:"start",mode:"anonymous",section:"intro"}))).status,429);
   assert.equal(writes.length,0); limited=false;
 });
 mock.module("../lib/auth.js", { namedExports: {
