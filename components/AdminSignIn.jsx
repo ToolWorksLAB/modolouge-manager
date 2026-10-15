@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { api } from "../lib/client-api.js";
-export default function AdminSignIn() {
+export default function AdminSignIn({ expired = false }) {
   const [step, setStep] = useState("login");
   const [email, setEmail] = useState("info@toolworkslab.com");
   const [password, setPassword] = useState("");
@@ -61,6 +61,7 @@ export default function AdminSignIn() {
           {step === "code" && <label className="journey-field" htmlFor="admin-code">Email verification code
             <input id="admin-code" name="code" className="journey-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" required minLength={6} maxLength={10} value={code} disabled={busy} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,10))}/>
           </label>}
+          {expired && step === "login" && <p className="journey-field-hint" role="status">Your session expired. Sign in again to continue.</p>}
           {error && <p className="journey-error" role="alert">{error}</p>}
           {message && <p className="journey-field-hint" role="status">{message}</p>}
           <button className="journey-primary" disabled={busy}>{busy ? "One moment…" : {login:"Sign in",recovery:"Send verification code",code:"Verify code",password:"Save password"}[step]}<span aria-hidden="true">↗</span></button>

@@ -5,10 +5,14 @@ import { createHash } from "node:crypto";
 process.env.SESSION_SECRET = "test-only-secret-not-for-deployment";
 process.env.APP_URL = "https://modolouge.example";
 let cookieValue, record, authUser;
+let expiredAccess = false;
+const writes = [], deferred = [];
+mock.module("next/server.js", { namedExports: { after: callback => deferred.push(callback) } });
 mock.module("next/headers.js", {
   namedExports: {
     cookies: async () => ({
       get: () => (cookieValue ? { value: cookieValue } : undefined),
+      set: (name, value, options) => writes.push({ name, value, options }),
     }),
   },
 });
@@ -24,18 +28,21 @@ mock.module("../lib/activity.js", {
 mock.module("../lib/supabase.js", {
   namedExports: {
     authClient: () => ({
-      auth: { getUser: async () => ({ data: { user: authUser } }) },
+      auth: {
+        getUser: async () => ({ data: { user: authUser } }),
+        refreshSession: async () => ({ error: new Error("Expired refresh token"), data: {} }),
+      },
     }),
     backend: () => ({}),
     checked: async () => {},
   },
 });
-const { requireUser, originCheck } = await import("../lib/auth.js");
+const { requireUser, originCheck, logout } = await import("../lib/auth.js");
 async function cookie(sub, expiry = "1h") {
   cookieValue = await new EncryptJWT({
     sub,
     access: "test-access",
-    expires: Math.floor(Date.now() / 1000) + 3600,
+    expires: Math.floor(Date.now() / 1000) + (expiredAccess ? -60 : 3600),
   })
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
@@ -107,4 +114,51 @@ test("mutations reject absent, foreign and lookalike origins", () => {
       }),
     ),
   );
+});
+
+test("an expired provider session expires the secure host cookie", async () => {
+  expiredAccess = true;
+  await cookie("admin");
+  writes.length = 0;
+  try { await assert.rejects(requireUser(true), { status: 401 }); }
+  finally { expiredAccess = false; }
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].name, "__Host-modolouge-manager-v2");
+  assert.equal(writes[0].value, "");
+  assert.deepEqual(writes[0].options, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0, expires: new Date(0) });
+});
+
+test("logout clears session and recovery cookies before provider revocation", async () => {
+  await cookie("admin");
+  writes.length = 0; deferred.length = 0;
+  const response = await logout(new Request("https://modolouge.example/api/auth/logout", {
+    method: "POST", headers: { origin: "https://modolouge.example" },
+  }));
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "https://modolouge.example/signin");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(writes.map(x => x.name), ["__Host-modolouge-manager-v2", "__Host-modolouge-manager-v2-flow", "__Host-modolouge-manager-v2-recovery"]);
+  for (const w of writes) {
+    assert.equal(w.value, ""); assert.equal(w.options.secure, true);
+    assert.equal(w.options.path, "/"); assert.equal(w.options.maxAge, 0);
+    assert.equal(w.options.domain, undefined);
+  }
+  assert.equal(deferred.length, 1);
+  // The mocked provider is unavailable; failure must not undo local logout.
+  await assert.doesNotReject(deferred[0]);
+});
+
+test("logout remains available with a malformed or missing session and rejects foreign origins", async () => {
+  for (const value of [undefined, "invalid-cookie"]) {
+    cookieValue = value; writes.length = 0;
+    const response = await logout(new Request("https://modolouge.example/api/auth/logout", {
+      method: "POST", headers: { origin: "https://modolouge.example" },
+    }));
+    assert.equal(response.status, 303); assert.equal(writes.length, 3);
+  }
+  writes.length = 0;
+  await assert.rejects(logout(new Request("https://modolouge.example/api/auth/logout", {
+    method: "POST", headers: { origin: "https://evil.invalid" },
+  })), { status: 403 });
+  assert.equal(writes.length, 0);
 });
