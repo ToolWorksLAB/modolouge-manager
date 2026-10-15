@@ -16,6 +16,26 @@ mock.module("../lib/activity.js", { namedExports: {
 const mod = await import("../lib/demo-visitors.js");
 const route = await import("../app/api/demo/visit/route.js");
 const request = (body, origin = mod.demoOrigin) => new Request("https://admin.toolworkslab.com/api/demo/visit", { method: "POST", headers: { origin, "user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/130.0.0.0 Safari/537.36", "content-type": "text/plain" }, body: JSON.stringify(body) });
+const { demoProductLabel } = await import("../lib/demo-product.js");
+
+test("demo labels survive start and pulse while legacy visits stay unknown", async () => {
+  for (const product of ["insole", "cast"]) {
+    writes = [];
+    const started = await route.POST(request({ type: "start", mode: "anonymous", product, section: "cutouts" }));
+    assert.equal(started.status, 200);
+    assert.deepEqual(writes[0].value.events, { ["viewed_" + product]: 1 });
+    const { token } = await started.json();
+    const pulse = await route.POST(request({ type: "pulse", mode: "anonymous", product, section: "cutouts", token, seq: 1, activeSeconds: 5, events: { cutouts: 2 } }));
+    assert.equal(pulse.status, 200);
+    assert.equal(writes[1].value.p_events["viewed_" + product], 1);
+    assert.equal(demoProductLabel(writes[1].value.p_events), product === "insole" ? "Insole" : "Cast / wrist splint");
+  }
+  assert.equal(demoProductLabel({ cutouts: 8, wedges: 2 }), "Not recorded");
+  assert.equal(demoProductLabel(), "Not recorded");
+  writes = [];
+  assert.equal((await route.POST(request({ type: "start", mode: "anonymous", product: "private-url", section: "intro" }))).status, 400);
+  assert.equal(writes.length, 0);
+});
 test("signed visit tokens reject tampering and expiry", () => {
   const id = "00000000-0000-4000-8000-000000000001", token = mod.issueToken(id, 1000);
   assert.equal(mod.verifyToken(token, 1001), id);

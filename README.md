@@ -36,6 +36,8 @@ The companion repo is `ToolWorksLAB/modolouge`. Keep shared visual/auth/data fil
 
 ## Visitor monitoring
 
+Demo visits now include a Demo column: Insole, Cast / wrist splint, or Not recorded for older clients. The public apps send an allowlisted product on start and pulse; it is stored as a single `viewed_insole` or `viewed_cast` marker in the existing events JSON. No schema migration is required. Shared tool names are never used to infer a product. Each page load is a separate visit; this does not link visits across the two apps or identify people.
+
 Supabase provides verified accounts, guest-session records, onboarding profiles, a visitor timeline with IP addresses, and job duration/cost data. The public trial is 5 geometry runs per guest/browser/network over 30 days. The manager shows current guests, linked accounts, uploads, queued and completed jobs, and verification/onboarding events. IPs expire after 30 days and activity after 90 days through a database cron job. Counts and exports cover the latest 1,000 people; event tables show the latest 100 records. Guest identities represent sessions, not identified people.
 
 Raw IPs and all account data are server-only; anonymous/public Supabase roles cannot query these tables or quota functions. Administrator authorization is checked against the current verified Supabase Auth email, not profile metadata. The companion app repository contains the authoritative SQL migrations and worker telemetry implementation.

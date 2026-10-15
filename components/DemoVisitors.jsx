@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "../lib/client-api.js";
+import { demoProductLabel } from "../lib/demo-product.js";
 const time = n => n >= 3600 ? (n / 3600).toFixed(1) + " h" : n >= 60 ? Math.floor(n / 60) + "m " + n % 60 + "s" : n + "s";
 const label = value => String(value).replaceAll("_", " ");
 const date = value => new Date(value).toLocaleString();
@@ -39,9 +40,10 @@ export default function DemoVisitors() {
       </div>
       <div className="visitor-charts"><Breakdown title="Countries" rows={data.countries} /><Breakdown title="Devices" rows={data.devices} /><Breakdown title="Browsers" rows={data.browsers} /><Breakdown title="Tools & actions" rows={data.actions} /></div>
       <div className="visitor-days" aria-label="Daily visits in UTC">{data.daily.map(day=><span key={day.day}><small>{day.day.slice(5)}</small><b>{day.visits}</b><span>{time(day.active_seconds)}</span></span>)}</div>
-      <div className="table-scroll"><table><thead><tr><th>Visit / time</th><th>Location / network</th><th>Device</th><th>Engaged time</th><th>Last tool</th><th>Source</th></tr></thead><tbody>
-        {data.visits.map(visit=><tr key={visit.id}><td><strong>Visit {visit.id.slice(0,8)}</strong><small>{date(visit.created_at)}</small><span className={"tag " + (visit.active_now ? "visitor-live" : "")}>{visit.active_now ? "Active now" : visit.ended ? "Visit ended" : "Inactive"}</span></td><td>{[visit.city,visit.region,visit.country].filter(Boolean).join(", ")}<small>{visit.masked_ip || "IP not stored"}</small></td><td>{visit.device}<small>{visit.os} · {visit.browser}</small></td><td>{time(visit.active_seconds)}<small>Last seen {date(visit.last_seen)}</small></td><td>{label(visit.section)}<small>{Object.entries(visit.events).filter(([,n])=>n>0).map(([key,n])=>label(key)+": "+n).join(" · ") || "Exploring"}</small></td><td>{visit.referrer || "Direct / unavailable"}</td></tr>)}
-        {!data.visits.length && <tr><td colSpan="6" className="empty-table">No demo visits recorded in this period yet. Tracking starts with this release; earlier visits cannot be recovered.</td></tr>}
+      <p className="fine">Demo identifies the page opened: Insole or Cast / wrist splint. Earlier visits show Not recorded. Opening another demo creates a separate visit.</p>
+      <div className="table-scroll"><table><thead><tr><th>Visit / time</th><th>Demo</th><th>Location / network</th><th>Device</th><th>Engaged time</th><th>Last tool</th><th>Source</th></tr></thead><tbody>
+        {data.visits.map(visit=><tr key={visit.id}><td><strong>Visit {visit.id.slice(0,8)}</strong><small>{date(visit.created_at)}</small><span className={"tag " + (visit.active_now ? "visitor-live" : "")}>{visit.active_now ? "Active now" : visit.ended ? "Visit ended" : "Inactive"}</span></td><td><span className="tag">{demoProductLabel(visit.events)}</span></td><td>{[visit.city,visit.region,visit.country].filter(Boolean).join(", ")}<small>{visit.masked_ip || "IP not stored"}</small></td><td>{visit.device}<small>{visit.os} · {visit.browser}</small></td><td>{time(visit.active_seconds)}<small>Last seen {date(visit.last_seen)}</small></td><td>{label(visit.section)}<small>{Object.entries(visit.events).filter(([key,n])=>n>0 && !key.startsWith("viewed_")).map(([key,n])=>label(key)+": "+n).join(" · ") || "Exploring"}</small></td><td>{visit.referrer || "Direct / unavailable"}</td></tr>)}
+        {!data.visits.length && <tr><td colSpan="7" className="empty-table">No demo visits recorded in this period yet. Tracking starts with this release; earlier visits cannot be recovered.</td></tr>}
       </tbody></table></div>
       <div className="visitor-pagination"><span>{data.summary.visits ? offset+1 : 0}–{offset+data.visits.length} of {data.summary.visits} visits · Updated {date(data.updated_at)}</span><div><button className="button quiet" disabled={!offset} onClick={()=>setOffset(n=>Math.max(0,n-50))}>← Previous</button><button className="button quiet" disabled={offset+50>=data.summary.visits} onClick={()=>setOffset(n=>n+50)}>Next →</button></div></div>
     </>}
